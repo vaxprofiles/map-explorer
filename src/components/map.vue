@@ -1,16 +1,13 @@
 <template>
-  <div class="relative w-full h-full p-2">
+  <div class="relative w-full h-full">
     <svg class="w-full h-full" ref="svgRef"></svg>
-    <div
+    <Button
       v-show="isZoomedRef"
+      class="fixed bottom-4 right-4"
       @click="resetZoom"
     >
-      <Button
-        class="absolute bottom-2 right-2"
-      >
-        <ResetIcon />
-      </Button>
-    </div>
+      <ResetIcon />
+    </Button>
   </div>
 </template>
 

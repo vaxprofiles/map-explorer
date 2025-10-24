@@ -25,7 +25,7 @@
         </div>
 
         <!-- Legend -->
-        <div class="absolute bottom-4 left-4">
+        <div class="fixed bottom-4 left-4">
           <Button v-model="showLegend">
             <BarchartIcon />
           </Button>
@@ -52,8 +52,7 @@
             <SettingsIcon />
           </Button>
             <div
-              class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75"
-              style="max-height: calc(100vh - 10rem);"
+              class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75 max-h-[80dvh]"
               v-show="showControls"
             >
             <ControlPanel
