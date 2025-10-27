@@ -2,6 +2,7 @@
   <div class="items-center justify-center h-screen w-full">
     <!-- Main content - only show when app is ready and regionData exists -->
     <div v-if="isAppReady" class="w-full h-screen flex">
+
       <!-- Map container -->
       <div class="flex-1 flex flex-col p-2 bg-gray-50 border border-gray-300 rounded">
         <div class="w-full h-full flex flex-col">
@@ -10,6 +11,7 @@
               :geojson="geojsonData"
               :regionData="regionData"
               :config="config"
+              :selectedLegendColor="selectedLegendColor"
             />
           </div>
         </div>
@@ -42,6 +44,7 @@
             <LegendHistogram
               :regionData="regionData"
               :config="config"
+              @selected-legend-color="handleSelectedLegendColorChanged"
             />
           </div>
         </div>
@@ -109,6 +112,7 @@ const showControls = ref(false)
 const dataProcessor = ref<any | undefined>(undefined)
 const geojsonData = ref<GeoJSON | null>(undefined)
 const regionData = ref<RegionData[] | null>(undefined)
+const selectedLegendColor = ref<string>("")
 
 let config = ref<any>(validateAppConfig(appConfig))
 
@@ -124,12 +128,18 @@ function handleFilterChanged(categoryName: string, value: any) {
   selectedFilters.value[categoryName] = value
 }
 
+function handleSelectedLegendColorChanged(color: string) {
+  console.log(`[App] selected legend color changed to:`, color)
+  selectedLegendColor.value = color
+}
+
 function handleMapConfigChanged(value: any) {
   console.log(`[App] map config changed to:`, value)
   config.value = {
     ...config.value,
     mapColorConfig: value
   }
+  resetSelectedLegendColor()
 }
 
 function resetSelectedFilters() {
@@ -214,4 +224,10 @@ watch(
 onMounted(async () => {
   await initializeApp()
 })
+
+// helpers
+function resetSelectedLegendColor() {
+  selectedLegendColor.value = ""
+}
+
 </script>

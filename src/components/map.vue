@@ -33,11 +33,13 @@ interface Props {
   geojson: GeoJSON
   regionData: RegionData[] | undefined
   config: AppConfig
+  selectedLegendColor: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   geojson: undefined,
   regionData: () => undefined,
+  selectedLegendColor: "",
 })
 
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -48,6 +50,7 @@ let zoomBehavior = null
 let svg = null
 let g = null
 let currentTransform = d3.zoomIdentity
+let paths = null // Store paths selection for updates
 
 const virtualElement = ref({
   getBoundingClientRect: () => ({
@@ -81,12 +84,29 @@ function createRegionDataMap(regionData) {
   return regionDataMap
 }
 
+function updateOpacity() {
+  if (!paths) return
+
+  const selectedLegendColor = props.selectedLegendColor
+
+  function getOpacity(color) {
+    if (!selectedLegendColor) return 1
+    return selectedLegendColor === color ? 1 : 0.2
+  }
+
+  paths.each(function(d) {
+    const color = d3.select(this).attr('fill')
+    const opacityValue = getOpacity(color)
+    d3.select(this).attr('fill-opacity', opacityValue)
+  })
+}
 
 function renderMap() {
   const geojsonData = props.geojson
   const regionData = props.regionData
   const idColumnGeojson = props.config.idColumnGeojson
   const config = props.config
+  const selectedLegendColor = props.selectedLegendColor
 
   if (!svgRef.value || !geojsonData ) {
     return
@@ -123,7 +143,13 @@ function renderMap() {
     return mapColor.getBinColor(region?.value)
   }
 
-  const paths = g.selectAll<SVGPathElement, Feature>('path')
+  function getOpacity(color) { // hex color input
+    const selected = selectedLegendColor
+    if (!selected) return 1
+    return selected === color ? 1 : 0.2
+  }
+
+  paths = g.selectAll<SVGPathElement, Feature>('path')
     .data(geojsonData.features)
     .join('path')
     .attr('d', pathGenerator)
@@ -157,9 +183,14 @@ function renderMap() {
 
    svg.call(zoomBehavior)
 
-  paths.attr('fill', (d) => {
-      return getColor(d)
-    })
+  paths.each(function(d) {
+    const color = getColor(d)
+    const opacityValue = getOpacity(color)
+
+    d3.select(this)
+      .attr('fill', color)
+      .attr('fill-opacity', opacityValue)
+  })
 
   paths.on('mouseover', function(event, d) {
       const bbox = this.getBBox()
@@ -274,13 +305,25 @@ onMounted(() => {
   resizeObserver.observe(svgRef.value);
 })
 
-
+// Watch for full re-render triggers
 watch(
-  [() => props.config, () => props.regionData, () => props.geojson],
+  [
+    () => props.config,
+    () => props.regionData,
+    () => props.geojson,
+  ],
   () => {
     renderMap()
   },
   { deep: true }
+)
+
+// Watch selectedLegendColor separately for opacity-only updates
+watch(
+  () => props.selectedLegendColor,
+  () => {
+    updateOpacity()
+  }
 )
 
 onUnmounted(() => {

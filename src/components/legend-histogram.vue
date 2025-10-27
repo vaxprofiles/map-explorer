@@ -21,6 +21,8 @@ const props = withDefaults(defineProps<Props>(), {
   regionData: () => undefined,
 })
 
+const emit = defineEmits(['selected-legend-color'])
+
 const containerRef = ref<HTMLElement | null>(null)
 let svg: any = null
 
@@ -55,14 +57,25 @@ function renderLegend() {
 
   // Color bins
   colors.forEach((color, i) => {
-    group.append('rect')
-      .attr('x', margin.left + i * binWidth)
-      .attr('y', margin.top)
-      .attr('width', binWidth)
-      .attr('height', binHeight)
-      .style('fill', color)
-      .style('stroke', mapColor!.getBorderColor())
-      .style('stroke-width', 0.5)
+     group.append('rect')
+    .attr('x', margin.left + i * binWidth)
+    .attr('y', margin.top)
+    .attr('width', binWidth)
+    .attr('height', binHeight)
+    .style('fill', color)
+    .style('stroke', mapColor!.getBorderColor())
+    .style('stroke-width', 0.5)
+    .style('cursor', 'pointer')
+    .style('touch-action', 'manipulation')
+
+    .on('mouseenter', function () {
+      d3.select(this).style('stroke-width', 2)
+      emit('selected-legend-color', color)
+    })
+    .on('mouseout', function () {
+      d3.select(this).style('stroke-width', 0.5)
+      emit('selected-legend-color', "")
+    })
   })
 
   // Threshold labels
