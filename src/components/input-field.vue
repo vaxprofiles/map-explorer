@@ -4,7 +4,7 @@
       {{ label }}
     </label>
     <input
-      :type="inputType"
+      type="number"
       :value="inputValue"
       @input="onInput"
       :placeholder="placeholder"
@@ -15,100 +15,75 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from 'vue'
+<script setup lang="ts">
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 
-type InputValueType = 'text' | 'number' | 'integer'
+function leastSignificantPlace(n: number): number {
+  try {
+    if (!Number.isFinite(n)) throw new Error('Input must be a finite number')
+    if (n === 0) return 1
 
-export default defineComponent({
-  name: 'InputField',
-  props: {
-    defaultValue: {
-      type: [String, Number] as PropType<string | number>,
-      default: ''
-    },
-    label: {
-      type: String,
-      default: ''
-    },
-    placeholder: {
-      type: String,
-      default: ''
-    },
-    type: {
-      type: String as PropType<InputValueType>,
-      default: 'text',
-      validator: (value: string): boolean =>
-        ['text', 'number', 'integer'].includes(value)
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      inputValue: this.defaultValue as string | number,
-      debounceTimer: null as number | null
-    }
-  },
-  computed: {
-    inputType(): string {
-      if (this.type === 'integer' || this.type === 'number') {
-        return 'number'
-      }
-      return this.type
-    },
-    step(): string | undefined {
-      if (this.type === 'integer') {
-        return '1'
-      } else if (this.type === 'number') {
-        return 'any'
-      }
-      return undefined
-    }
-  },
-  methods: {
-    onInput(e: Event): void {
-      const target = e.target as HTMLInputElement
-      let value: string | number = target.value
+    const str = n.toString()
+    const decimalIndex = str.indexOf('.')
 
-      // Type validation and conversion
-      if (this.type === 'number') {
-        value = value === '' ? '' : parseFloat(value)
-        if (value !== '' && isNaN(value as number)) return
-      } else if (this.type === 'integer') {
-        value = value === '' ? '' : parseInt(value, 10)
-        if (value !== '' && isNaN(value as number)) return
-      }
-
-      this.inputValue = value
-
-      // Clear existing timer
-      if (this.debounceTimer !== null) {
-        clearTimeout(this.debounceTimer)
-      }
-
-      // Set debounce timer (500ms cooldown)
-      this.debounceTimer = window.setTimeout(() => {
-        this.$emit('input-changed', this.inputValue)
-      }, 500)
+    if (decimalIndex === -1) {
+      const match = str.match(/0+$/)
+      const zeros = match ? match[0].length : 0
+      return 10 ** zeros
+    } else {
+      const trimmed = str.replace(/0+$/, '') // remove trailing zeros
+      const decimals = trimmed.length - 1 - decimalIndex
+      return 10 ** (-decimals)
     }
-  },
-  watch: {
-    defaultValue(val: string | number): void {
-      this.inputValue = val
-    }
-  },
-  mounted(): void {
-    // Emit initial state on mount (mirrors Checkbox behavior)
-    this.$emit('input-changed', this.inputValue)
-  },
-  beforeUnmount(): void {
-    // Clean up timer
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer)
-    }
+  } catch {
+    return 1
   }
+}
+
+type Emits = {
+  (e: 'input-changed', value: number | ''): void
+}
+
+const props = defineProps<{
+  defaultValue?: number
+  label?: string
+  placeholder?: string
+  disabled?: boolean
+}>()
+
+const emit = defineEmits<Emits>()
+
+const inputValue = ref<number>(props.defaultValue ?? 0)
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+function onInput(e: Event) {
+  const target = e.target as HTMLInputElement
+  let value: number | '' = target.value === '' ? '' : parseFloat(target.value)
+  if (value !== '' && Number.isNaN(value)) return
+
+  inputValue.value = value
+
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    emit('input-changed', inputValue.value)
+  }, 500)
+}
+
+watch(
+  () => props.defaultValue,
+  (val) => {
+    inputValue.value = val ?? 0
+  }
+)
+
+onMounted(() => {
+  emit('input-changed', inputValue.value)
 })
+
+onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
+
+const step = computed(() => leastSignificantPlace(inputValue.value))
+
 </script>

@@ -61,7 +61,6 @@
             <InputField
               class="mt-3"
               label="Legend Minimum"
-              type="number"
               :defaultValue="config.mapColorConfig.minValue"
               :disabled="config.mapColorConfig.dynamic"
               placeholder="0.00"
@@ -71,7 +70,6 @@
             <InputField
               class="mt-3"
               label="Legend Maximum"
-              type="number"
               :defaultValue="config.mapColorConfig.maxValue"
               :disabled="config.mapColorConfig.dynamic"
               placeholder="1.00"
