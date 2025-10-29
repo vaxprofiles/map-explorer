@@ -26,6 +26,30 @@ const emit = defineEmits(['selected-legend-color'])
 const containerRef = ref<HTMLElement | null>(null)
 let svg: any = null
 
+
+function formatThreshold(x) {
+    if (x === 0) return "0";
+
+  const abs = Math.abs(x);
+  const sign = x < 0 ? "-" : "";
+
+  // Scientific notation branch
+  if (abs >= 1e3 || abs < 1e-3) {
+    // Get "1.23e±n" with 3 significant digits
+    const s = d3.format(".2e")(abs);          // e.g., "1.23e-5"
+    const [mant, expStr] = s.split("e");      // mant="1.23", expStr="-5"
+    const exp = parseInt(expStr, 10);
+
+    return `${sign}${mant}e${exp >= 0 ? "+" : ""}${exp}`;
+  }
+
+  // Fixed/general with 3 significant digits
+  // d3 ".3g" keeps 3 sig figs and uses fixed here; then drop leading zero.
+  const fixed = d3.format(".3g")(x);
+  return fixed.replace(/^(-?)0\./, "$1.");
+}
+
+
 function renderLegend() {
   if (!svg) return
 
@@ -38,6 +62,7 @@ function renderLegend() {
   const margin = { top: 40, right: 20, bottom: 40, left: 20 }
 
   const thresholds = mapColor.getThresholds()
+  console.log(thresholds)
   const colors = mapColor.getColors()
   const numBins = colors.length
 
@@ -97,7 +122,7 @@ function renderLegend() {
       .attr('text-anchor', 'middle')
       .attr('font-size', '10px')
       .attr('fill', '#666')
-      .text(d3.format(Math.abs(threshold) < 1 ? '.2f' : ',.0f')(threshold))
+      .text(formatThreshold(threshold))
   })
 }
 

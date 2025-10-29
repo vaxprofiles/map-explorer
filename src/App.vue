@@ -129,7 +129,7 @@ function handleFilterChanged(categoryName: string, value: any) {
 }
 
 function handleSelectedLegendColorChanged(color: string) {
-  console.log(`[App] selected legend color changed to:`, color)
+  if (color) console.log(`[App] selected legend color changed to:`, color)
   selectedLegendColor.value = color
 }
 

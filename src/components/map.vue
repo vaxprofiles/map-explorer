@@ -50,7 +50,7 @@ let zoomBehavior = null
 let svg = null
 let g = null
 let currentTransform = d3.zoomIdentity
-let paths = null // Store paths selection for updates
+let paths = null
 
 const virtualElement = ref({
   getBoundingClientRect: () => ({
