@@ -49,6 +49,13 @@
           </div>
         </div>
 
+        <!-- Switch Map -->
+        <div class="absolute top-4 right-18">
+          <Button @click="switchMap">
+            <SwitchIcon />
+          </Button>
+        </div>
+
         <!-- Control Panel -->
         <div class="absolute top-4 right-4">
           <Button v-model="showControls">
@@ -87,21 +94,22 @@ import { ref, onMounted, watch } from "vue"
 import BarchartIcon from "./components/icons/BarchartIcon.vue"
 import SettingsIcon from "./components/icons/SettingsIcon.vue"
 import InformationIcon from "./components/icons/InformationIcon.vue"
+import SwitchIcon from "./components/icons/SwitchIcon.vue"
 import LoadingMap from "./components/icons/LoadingMap.vue"
-import Button from "./components/button.vue"
 
 // components
 import Map from "./components/map.vue"
 import LegendHistogram from "./components/legend-histogram.vue"
 import ControlPanel from "./components/control-panel.vue"
 import MapDescription from "./components/map-description.vue"
+import Button from "./components/button.vue"
 
 import { fetchPublicFile } from "./helpers.ts"
 import type { GeoJSON } from "geojson"
 import type { RegionData } from "./processors/types"
 import { ProcessorFactory } from "./processors/processor_factory"
-import { appConfig } from "./config"
-import { validateAppConfig } from "./types.ts"
+import { appConfigs } from "./config"
+import { validateAppConfig, AppConfig } from "./types.ts"
 
 // --- UI toggles ---
 const showInfo = ref(false)
@@ -113,8 +121,8 @@ const dataProcessor = ref<any | undefined>(undefined)
 const geojsonData = ref<GeoJSON | null>(undefined)
 const regionData = ref<RegionData[] | null>(undefined)
 const selectedLegendColor = ref<string>("")
-
-let config = ref<any>(validateAppConfig(appConfig))
+let config = ref<AppConfig>(undefined)
+const configs = ref<AppConfig[]>([])
 
 // Filter state
 const availableFilterOptions = ref<{ [key: string]: string[] }>({})
@@ -124,6 +132,11 @@ const selectedFilters = ref<{ [key: string]: string }>({})
 const isAppReady = ref(false)
 
 // Map control handlers
+function switchMap() {
+  console.log("asd")
+}
+
+
 function handleFilterChanged(categoryName: string, value: any) {
   selectedFilters.value[categoryName] = value
 }
@@ -174,6 +187,24 @@ async function handleImport(importedConfig: any, importedGeojson: GeoJSON, impor
 // App initialization
 async function initializeApp() {
   console.log("[App] App Initializing")
+
+  // Read and validate configs
+  configs.value = appConfigs.map((cfg, index) => {
+    try {
+      validateAppConfig(cfg)
+      return cfg
+    } catch (error) {
+      console.error(`[App] Invalid config at index ${index}:`, error)
+      throw error
+    }
+  })
+
+  // Assign first config
+  if (configs.value.length === 0) {
+    throw new Error("[App] No valid configs available")
+  }
+  config.value = configs.value[0]
+  console.log("[App] Loaded config:", config.value.mapDescription.title)
 
   // Load Geojson
   const geojsonFile = await fetchPublicFile(config.value.geojsonFileName)

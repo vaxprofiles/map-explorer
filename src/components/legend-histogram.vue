@@ -62,7 +62,6 @@ function renderLegend() {
   const margin = { top: 40, right: 20, bottom: 40, left: 20 }
 
   const thresholds = mapColor.getThresholds()
-  console.log(thresholds)
   const colors = mapColor.getColors()
   const numBins = colors.length
 
