@@ -50,7 +50,7 @@
         </div>
 
         <!-- Switch Map -->
-        <div class="absolute top-4 right-18">
+        <div class="absolute top-4 right-18" v-if="configs.length > 1">
           <Button @click="switchMap">
             <SwitchIcon />
           </Button>
@@ -69,7 +69,7 @@
               :availableFilterOptions="availableFilterOptions"
               :config="config"
               @filter-changed="handleFilterChanged"
-              @map-config-changed="handleMapConfigChanged"
+              @map-config-changed="handleMapColorConfigChanged"
             />
           </div>
         </div>
@@ -86,7 +86,6 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
 
@@ -104,12 +103,13 @@ import ControlPanel from "./components/control-panel.vue"
 import MapDescription from "./components/map-description.vue"
 import Button from "./components/button.vue"
 
-import { fetchPublicFile } from "./helpers.ts"
 import type { GeoJSON } from "geojson"
+import { shallowEqual } from "fast-equals";
 import type { RegionData } from "./processors/types"
-import { ProcessorFactory } from "./processors/processor_factory"
-import { appConfigs } from "./config"
-import { validateAppConfig, AppConfig } from "./types.ts"
+import { Processor } from "./processors/processor"
+import { mapConfigs } from "./config/loader"
+import type { MapConfig } from "./config/types.ts"
+import { MapManager } from "./mapManager"
 
 // --- UI toggles ---
 const showInfo = ref(false)
@@ -117,12 +117,12 @@ const showLegend = ref(false)
 const showControls = ref(false)
 
 // App state
-const dataProcessor = ref<any | undefined>(undefined)
-const geojsonData = ref<GeoJSON | null>(undefined)
-const regionData = ref<RegionData[] | null>(undefined)
+const dataProcessor = ref<Processor | undefined>(undefined)
+const geojsonData = ref<GeoJSON | undefined>(undefined)
+const regionData = ref<RegionData[] | undefined>(undefined)
 const selectedLegendColor = ref<string>("")
-let config = ref<AppConfig>(undefined)
-const configs = ref<AppConfig[]>([])
+const config = ref<MapConfig | undefined>(undefined)
+const configs = ref<MapConfig[]>([])
 
 // Filter state
 const availableFilterOptions = ref<{ [key: string]: string[] }>({})
@@ -131,23 +131,61 @@ const selectedFilters = ref<{ [key: string]: string }>({})
 // UI state
 const isAppReady = ref(false)
 
-// Map control handlers
-function switchMap() {
-  console.log("asd")
+// Map manager instance
+const mapManager = new MapManager()
+
+
+function updateCurrentConfigInConfigs() {
+  if (!config.value) return
+
+  const currentTitle = config.value.mapDescription.title
+  const idx = configs.value.findIndex(
+    c => c.mapDescription.title === currentTitle
+  )
+
+  if (idx !== -1) {
+    // Replace the entry to keep reactivity and ensure MapManager sees updated config
+    configs.value[idx] = { ...config.value }
+  }
 }
 
+// Map control handlers
+async function switchMap() {
+  if (configs.value.length === 0) return
+
+  // Store Cache
+  handleMapConfigChanged("filter", selectedFilters.value)
+  updateCurrentConfigInConfigs()
+  mapManager.updateCachedState(config.value, {
+    regionData: regionData.value ?? [],
+    selectedFilters: { ...selectedFilters.value },
+    availableFilterOptions: { ...availableFilterOptions.value }
+  })
+
+  const currentKey = config.value?.mapDescription.title
+  const currentIdx = configs.value.findIndex(
+    c => c.mapDescription.title === currentKey
+  )
+
+  const nextIdx =
+    currentIdx === -1 ? 0 : (currentIdx + 1) % configs.value.length
+
+  const nextConfig = configs.value[nextIdx]
+  await applyMap(nextConfig)
+}
 
 function handleFilterChanged(categoryName: string, value: any) {
   selectedFilters.value[categoryName] = value
 }
 
 function handleSelectedLegendColorChanged(color: string) {
-  if (color) console.log(`[App] selected legend color changed to:`, color)
+  if (color) console.log("[App] selected legend color changed to:", color)
   selectedLegendColor.value = color
 }
 
-function handleMapConfigChanged(value: any) {
-  console.log(`[App] map config changed to:`, value)
+function handleMapColorConfigChanged(value: any) {
+  console.log("[App] map color config changed to:", value)
+  if (!config.value) return
   config.value = {
     ...config.value,
     mapColorConfig: value
@@ -155,99 +193,56 @@ function handleMapConfigChanged(value: any) {
   resetSelectedLegendColor()
 }
 
-function resetSelectedFilters() {
-  selectedFilters.value = {}
-}
-
-async function setMapControls(dp: any) {
-  resetSelectedFilters()
-  if (dp) {
-    availableFilterOptions.value = await dp.extractFilterCategories(config.value.categoryColumns)
-    for (const [categoryName, values] of Object.entries(availableFilterOptions.value)) {
-      selectedFilters.value[categoryName] = (values as string[])[0]
-    }
-  } else {
-    availableFilterOptions.value = {}
+function handleMapConfigChanged(key: string, value: any) {
+  console.log(`[App] map config changed key: ${key} to value: `, value)
+  if (!config.value) return
+  config.value = {
+    ...config.value,
+    [key]: value
   }
 }
 
-// Import handlers
-async function handleImport(importedConfig: any, importedGeojson: GeoJSON, importedProcessor: any) {
-  console.log("[App] Importing new data")
-  isAppReady.value = false
+async function applyMap(mapConfig: MapConfig) {
+  console.log("[App] Switching to map:", mapConfig.mapDescription.title)
 
-  config.value = importedConfig
-  geojsonData.value = importedGeojson
-  dataProcessor.value = importedProcessor
+  const state = await mapManager.getMapState(mapConfig)
 
-  await setMapControls(dataProcessor.value)
-  isAppReady.value = true
+  // Update current config and reactive refs
+  config.value = mapConfig
+  geojsonData.value = state.geojsonData
+  dataProcessor.value = state.dataProcessor
+  regionData.value = state.regionData
+  availableFilterOptions.value = { ...state.availableFilterOptions }
+  selectedFilters.value = { ...state.selectedFilters }
 }
 
 // App initialization
 async function initializeApp() {
   console.log("[App] App Initializing")
+  configs.value = mapConfigs
 
-  // Read and validate configs
-  configs.value = appConfigs.map((cfg, index) => {
-    try {
-      validateAppConfig(cfg)
-      return cfg
-    } catch (error) {
-      console.error(`[App] Invalid config at index ${index}:`, error)
-      throw error
-    }
-  })
+  if (configs.value.length === 0) throw new Error("[App] No valid configs available")
 
-  // Assign first config
-  if (configs.value.length === 0) {
-    throw new Error("[App] No valid configs available")
-  }
-  config.value = configs.value[0]
-  console.log("[App] Loaded config:", config.value.mapDescription.title)
-
-  // Load Geojson
-  const geojsonFile = await fetchPublicFile(config.value.geojsonFileName)
-  geojsonData.value = JSON.parse(await geojsonFile.text()) as GeoJSON
-
-  // config dependent initialization
-  switch (config.value.kind) {
-    case "geojson-only":
-      break
-    case "geojson-datafile": {
-      const dataFile = await fetchPublicFile(config.value.dataFileName)
-      dataProcessor.value = await ProcessorFactory.create(dataFile)
-      await setMapControls(dataProcessor.value)
-
-      const initialFilters = config.value.initialFiltering || selectedFilters.value
-      regionData.value = await dataProcessor.value.getRegionData(
-        initialFilters,
-        config.value.idColumnDataFile,
-        config.value.valueColumn
-      )
-      break
-    }
-    case "geojson-embedded":
-      break
-    default:
-      throw new Error(`Unhandled AppConfig kind: ${JSON.stringify(config.value)}`)
-  }
-
+  // Load first map
+  await applyMap(configs.value[0])
   isAppReady.value = true
   console.log("[App] App initialized")
 }
 
-// Watch filter if filter changed query new data
+// Watch filter: if filter changed, query new data
 watch(
   selectedFilters,
   async () => {
-    if (isAppReady.value !== true) return
-    console.log("[App] Filter changed querying new data]")
+    if (!isAppReady.value || !dataProcessor.value || !config.value) return
+    if (shallowEqual(selectedFilters.value, config.value.filter)) return
+    console.log("[App] Filter changed, querying new data")
+
     regionData.value = await dataProcessor.value.getRegionData(
       selectedFilters.value,
       config.value.idColumnDataFile,
       config.value.valueColumn
     )
+
   },
   { deep: true }
 )
@@ -260,5 +255,5 @@ onMounted(async () => {
 function resetSelectedLegendColor() {
   selectedLegendColor.value = ""
 }
-
 </script>
+

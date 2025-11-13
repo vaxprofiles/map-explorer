@@ -60,37 +60,10 @@ Your map will be displayed on the Github page of your fork and you can share it 
 ### Configuration Modes
 
 map-explorer can be configure by changing the configuration file in `/src/config.ts`
-The application supports two distinct configuration modes, determined by the `kind` field:
+The application currently supports one distinct configuration mode, determined by the `kind` field:
 
-#### 1. GeoJSON Only (`geojson-only`)
 
-Use this mode if you only want to display a map and nothing else.
-
-**Fields:**
-
-- **`kind`** (required): Must be set to `"geojson-only"`
-- **`geojsonFileName`** (required, string): Filename of the GeoJSON file. Put your file in the `/public` folder
-- **`idColumnGeojson`** (required, string): The property name in the GeoJSON features that serves as the unique identifier
-- **`legendTitle`** (optional, string): Title to display in the map legend
-
-**Example:**
-
-```javascript
-export const appConfig: AppConfig = {
-  "kind": "geojson-only",
-  mapDescription: {
-    title: "My catchy map title",
-    description: "My informative description"
-  },
-  "geojsonFileName": "regions.geojson",
-  "idColumnGeojson": "region_id",
-  "legendTitle": "Regional Data"
-}
-```
-
----
-
-#### 2. GeoJSON + External Data File (`geojson-datafile`)
+#### 1. GeoJSON + External Data File (`geojson-datafile`)
 
 Use this mode when you have a separate data file (e.g., CSV or parquet file) that needs to be joined with your GeoJSON geometries. The data file should contain a column that holds the region id's in the GeoJSON and a valueColumn that holds numberic values that are used to color the regions. It supports categorical columns that can be used as filters. Given an applied filter each region should map to a numerical value.
 

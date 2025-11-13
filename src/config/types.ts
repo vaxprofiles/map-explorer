@@ -34,7 +34,7 @@ export const MapColorConfigSchema = z.object({
 export type MapColorConfig = z.infer<typeof MapColorConfigSchema>;
 
 
-export const AppConfigSchema = z.discriminatedUnion("kind", [
+export const MapConfigSchema = z.discriminatedUnion("kind", [
   // 1) GeoJSON only
   z.object({
     kind: z.literal("geojson-only"),
@@ -56,26 +56,8 @@ export const AppConfigSchema = z.discriminatedUnion("kind", [
     valueColumn: z.string(),
     legendTitle: z.string().optional(),
     mapColorConfig: MapColorConfigSchema,
-    initialFiltering: z.record(z.string(), z.string()).optional(),
+    filter: z.record(z.string(), z.string()).optional(),
   }),
 ]);
 
-export type AppConfig = z.infer<typeof AppConfigSchema>;
-
-
-// Config validator
-export function validateAppConfig(input: unknown): AppConfig {
-  const result = AppConfigSchema.safeParse(input)
-
-  if (result.success) {
-    console.log(`[App Config Validator] parsed ${result.data.kind} config`)
-    return Object.freeze(result.data)
-  }
-
-  const errors = result.error.issues.map(iss => {
-    const path = iss.path.length ? ` at ${iss.path.join(".")}` : ""
-    return `${iss.message}${path}`
-  })
-
-  throw new Error(["Invalid AppConfig:", ...errors.map(e => ` - ${e}`)].join("\n"))
-}
+export type MapConfig = z.infer<typeof MapConfigSchema>;

@@ -90,7 +90,7 @@ import { computed } from 'vue'
 import Selection from './selection.vue'
 import Checkbox from './checkbox.vue'
 import InputField from './input-field.vue'
-import { colorSchemes } from '../types.ts'
+import { colorSchemes } from '../config/types.ts'
 
 const props = defineProps({
   availableFilterOptions: {
@@ -115,10 +115,10 @@ const hasFilterOptions = computed(() =>
 
 function getDefaultFilterValue (categoryName, options) {
   if (
-    props.config.initialFiltering !== undefined &&
-    Object.prototype.hasOwnProperty.call(props.config.initialFiltering, categoryName)
+    props.config.filter !== undefined &&
+    Object.prototype.hasOwnProperty.call(props.config.filter, categoryName)
   ) {
-    return props.config.initialFiltering[categoryName]
+    return props.config.filter[categoryName]
   }
   return options?.[0]
 }

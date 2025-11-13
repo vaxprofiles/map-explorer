@@ -159,7 +159,7 @@ function renderMap() {
 
   // Setup zoom behavior
   zoomBehavior = d3.zoom()
-    .scaleExtent([0.5, 8])
+    .scaleExtent([0.8, 5])
     .on('start', () => {
       tooltipRef.value.style("visibility", "hidden")
       paths.style('pointer-events', 'none')
@@ -199,7 +199,7 @@ function renderMap() {
       d3.select(this)
         .transition()
         .duration(100)
-        .attr('transform', `translate(${centerX}, ${centerY}) scale(1.05) translate(${-centerX}, ${-centerY})`)
+        .attr("stroke-width", 1.5);
 
       // Get region data for tooltip
       const regionId = d.properties[idColumnGeojson]
@@ -266,7 +266,7 @@ function renderMap() {
       d3.select(this)
         .transition()
         .duration(100)
-        .attr('transform', 'scale(1)')
+        .attr("stroke-width", 0.5)
         .attr('fill', (d) => {
           return getColor(d)
         })
