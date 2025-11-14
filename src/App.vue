@@ -1,11 +1,19 @@
 <template>
-  <div class="items-center justify-center h-screen w-full">
-    <!-- Main content - only show when app is ready and regionData exists -->
-    <div v-if="isAppReady" class="w-full h-screen flex">
-
+  <div class="items-center justify-center h-screen w-full h-screen flex">
+    <div class="w-full h-screen flex">
       <!-- Map container -->
-      <div class="flex-1 flex flex-col p-2 bg-gray-50 border border-gray-300 rounded">
-        <div class="w-full h-full flex flex-col">
+      <div class="flex-1 flex flex-col p-2 bg-gray-50 border border-gray-300 rounded relative">
+
+        <!-- Loading App -->
+        <div v-if="isLoading"
+          class="w-full h-full flex items-center justify-center
+            animate-[pulse_2s_ease-in-out_infinite]
+          "
+        >
+          <LoadingMap />
+        </div>
+        <!-- Map -->
+        <div v-else class="w-full h-full flex flex-col">
           <div class="flex-1">
             <Map
               :geojson="geojsonData"
@@ -22,7 +30,10 @@
             <InformationIcon />
           </Button>
           <div v-show="showInfo" >
-            <MapDescription :config="config" />
+            <MapDescription
+              :config="config"
+              :loading="isLoading"
+            />
           </div>
         </div>
 
@@ -44,6 +55,7 @@
             <LegendHistogram
               :regionData="regionData"
               :config="config"
+              :loading="isLoading"
               @selected-legend-color="handleSelectedLegendColorChanged"
             />
           </div>
@@ -61,13 +73,14 @@
           <Button v-model="showControls">
             <SettingsIcon />
           </Button>
-            <div
-              class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75 max-h-[80dvh]"
-              v-show="showControls"
-            >
+          <div
+            class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75 max-h-[80dvh]"
+            v-show="showControls"
+          >
             <ControlPanel
               :availableFilterOptions="availableFilterOptions"
               :config="config"
+              :loading="isLoading"
               @filter-changed="handleFilterChanged"
               @map-config-changed="handleMapColorConfigChanged"
             />
@@ -75,17 +88,9 @@
         </div>
       </div>
     </div>
-
-    <!-- Loading App -->
-    <div v-else
-      class="w-full h-full flex items-center justify-center
-        animate-[pulse_2s_ease-in-out_infinite]
-      "
-    >
-      <LoadingMap />
-    </div>
   </div>
 </template>
+
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
 
@@ -103,13 +108,13 @@ import ControlPanel from "./components/control-panel.vue"
 import MapDescription from "./components/map-description.vue"
 import Button from "./components/button.vue"
 
-import type { GeoJSON } from "geojson"
-import { shallowEqual } from "fast-equals";
 import type { RegionData } from "./processors/types"
 import { Processor } from "./processors/processor"
 import { mapConfigs } from "./config/loader"
-import type { MapConfig } from "./config/types.ts"
+import type { MapConfig } from "./config/types"
 import { MapManager } from "./mapManager"
+import type { GeoJSON } from "geojson"
+import { shallowEqual } from "fast-equals"
 
 // --- UI toggles ---
 const showInfo = ref(false)
@@ -129,7 +134,7 @@ const availableFilterOptions = ref<{ [key: string]: string[] }>({})
 const selectedFilters = ref<{ [key: string]: string }>({})
 
 // UI state
-const isAppReady = ref(false)
+const isLoading = ref(true)
 
 // Map manager instance
 const mapManager = new MapManager()
@@ -153,6 +158,9 @@ function updateCurrentConfigInConfigs() {
 async function switchMap() {
   if (configs.value.length === 0) return
 
+  isLoading.value = true
+
+
   // Store Cache
   handleMapConfigChanged("filter", selectedFilters.value)
   updateCurrentConfigInConfigs()
@@ -172,6 +180,21 @@ async function switchMap() {
 
   const nextConfig = configs.value[nextIdx]
   await applyMap(nextConfig)
+  isLoading.value = false
+}
+
+async function applyMap(mapConfig: MapConfig) {
+  console.log("[App] Switching to map:", mapConfig.mapDescription.title)
+
+  const state = await mapManager.getMapState(mapConfig)
+
+  // Update current config and reactive refs
+  config.value = mapConfig
+  geojsonData.value = state.geojsonData
+  dataProcessor.value = state.dataProcessor
+  regionData.value = state.regionData
+  availableFilterOptions.value = { ...state.availableFilterOptions }
+  selectedFilters.value = { ...state.selectedFilters }
 }
 
 function handleFilterChanged(categoryName: string, value: any) {
@@ -202,20 +225,6 @@ function handleMapConfigChanged(key: string, value: any) {
   }
 }
 
-async function applyMap(mapConfig: MapConfig) {
-  console.log("[App] Switching to map:", mapConfig.mapDescription.title)
-
-  const state = await mapManager.getMapState(mapConfig)
-
-  // Update current config and reactive refs
-  config.value = mapConfig
-  geojsonData.value = state.geojsonData
-  dataProcessor.value = state.dataProcessor
-  regionData.value = state.regionData
-  availableFilterOptions.value = { ...state.availableFilterOptions }
-  selectedFilters.value = { ...state.selectedFilters }
-}
-
 // App initialization
 async function initializeApp() {
   console.log("[App] App Initializing")
@@ -225,7 +234,7 @@ async function initializeApp() {
 
   // Load first map
   await applyMap(configs.value[0])
-  isAppReady.value = true
+  isLoading.value = false
   console.log("[App] App initialized")
 }
 
@@ -233,7 +242,7 @@ async function initializeApp() {
 watch(
   selectedFilters,
   async () => {
-    if (!isAppReady.value || !dataProcessor.value || !config.value) return
+    if (!isLoading || !dataProcessor.value || !config.value) return
     if (shallowEqual(selectedFilters.value, config.value.filter)) return
     console.log("[App] Filter changed, querying new data")
 
