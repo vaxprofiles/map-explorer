@@ -16,16 +16,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, watch, onBeforeUnmount, computed } from 'vue'
 
 function leastSignificantPlace(n: number): number {
   try {
     if (!Number.isFinite(n)) throw new Error('Input must be a finite number')
     if (n === 0) return 1
-
     const str = n.toString()
     const decimalIndex = str.indexOf('.')
-
     if (decimalIndex === -1) {
       const match = str.match(/0+$/)
       const zeros = match ? match[0].length : 0
@@ -60,7 +58,6 @@ function onInput(e: Event) {
   const target = e.target as HTMLInputElement
   let value: number | '' = target.value === '' ? '' : parseFloat(target.value)
   if (value !== '' && Number.isNaN(value)) return
-
   inputValue.value = value
 
   if (debounceTimer) clearTimeout(debounceTimer)
@@ -76,14 +73,9 @@ watch(
   }
 )
 
-onMounted(() => {
-  emit('input-changed', inputValue.value)
-})
-
 onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
 })
 
 const step = computed(() => leastSignificantPlace(inputValue.value))
-
 </script>

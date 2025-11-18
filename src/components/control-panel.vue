@@ -153,7 +153,6 @@ const props = defineProps({
 
 const emit = defineEmits([
   'filter-changed',
-  'toggle-data-import',
   'map-config-changed'
 ])
 

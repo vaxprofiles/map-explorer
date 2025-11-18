@@ -61,11 +61,20 @@
           </div>
         </div>
 
-        <!-- Switch Map -->
+        <!-- Map Selector -->
         <div class="absolute top-4 right-18" v-if="configs.length > 1">
-          <Button @click="switchMap">
+          <Button v-model="showMapSelector">
             <SwitchIcon />
           </Button>
+        </div>
+
+        <div v-show="showMapSelector">
+            <MapSelector
+              :configs="configs"
+              :config="config"
+              :loading="isLoading"
+              @select-map="handleSwitchMap"
+          />
         </div>
 
         <!-- Control Panel -->
@@ -106,6 +115,7 @@ import Map from "./components/map.vue"
 import LegendHistogram from "./components/legend-histogram.vue"
 import ControlPanel from "./components/control-panel.vue"
 import MapDescription from "./components/map-description.vue"
+import MapSelector from "./components/map-selector.vue"
 import Button from "./components/button.vue"
 
 import type { RegionData } from "./processors/types"
@@ -120,6 +130,7 @@ import { shallowEqual } from "fast-equals"
 const showInfo = ref(false)
 const showLegend = ref(false)
 const showControls = ref(false)
+const showMapSelector = ref(false)
 
 // App state
 const dataProcessor = ref<Processor | undefined>(undefined)
@@ -155,11 +166,11 @@ function updateCurrentConfigInConfigs() {
 }
 
 // Map control handlers
-async function switchMap() {
+async function handleSwitchMap(mapTitle: string) {
   if (configs.value.length === 0) return
 
   isLoading.value = true
-
+  showMapSelector.value = false
 
   // Store Cache
   handleMapConfigChanged("filter", selectedFilters.value)
@@ -170,16 +181,13 @@ async function switchMap() {
     availableFilterOptions: { ...availableFilterOptions.value }
   })
 
-  const currentKey = config.value?.mapDescription.title
-  const currentIdx = configs.value.findIndex(
-    c => c.mapDescription.title === currentKey
+  const nextConfig = configs.value.find(
+    c => c.mapDescription.title === mapTitle
   )
 
-  const nextIdx =
-    currentIdx === -1 ? 0 : (currentIdx + 1) % configs.value.length
-
-  const nextConfig = configs.value[nextIdx]
-  await applyMap(nextConfig)
+  if (nextConfig) {
+    await applyMap(nextConfig)
+  }
   isLoading.value = false
 }
 

@@ -50,12 +50,6 @@ export default {
     defaultValue(newValue) {
       this.selectedValue = newValue;
     }
-  },
-  mounted() {
-    // Emit initial selection on mount
-    if (this.selectedValue) {
-      this.emitSelection();
-    }
   }
 }
 </script>
