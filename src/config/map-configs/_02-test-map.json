@@ -1,0 +1,21 @@
+{
+  "kind": "geojson-datafile",
+  "mapDescription": {
+    "title": "Clickedy click",
+    "description": "banaan"
+  },
+  "categoryColumns": ["A", "B"],
+  "valueColumn": "value",
+  "idColumnGeojson": "statcode",
+  "idColumnDataFile": "statcode",
+  "dataFileName": "dataset.csv",
+  "geojsonFileName": "nederland.geojson",
+  "legendTitle": "blala",
+  "mapColorConfig": {
+    "minValue": 1,
+    "maxValue": 100,
+    "colorScheme": "viridis",
+    "dynamic": false,
+    "colorSchemeInverted": false
+  }
+}

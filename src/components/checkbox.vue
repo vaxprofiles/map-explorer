@@ -38,6 +38,7 @@ export default {
   },
   methods: {
     onChange (e) {
+      this.hasUserInteracted = true
       this.isChecked = e.target.checked
       this.$emit('checkbox-changed', this.isChecked)
     }
@@ -46,10 +47,6 @@ export default {
     defaultValue (val) {
       this.isChecked = val
     }
-  },
-  mounted () {
-    // Emit initial state on mount (mirrors Selection behavior)
-    this.$emit('checkbox-changed', this.isChecked)
   }
 }
 </script>

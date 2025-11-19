@@ -1,85 +1,129 @@
 <template>
     <section class="bg-white">
       <div class="p-4 space-y-6">
-        <!-- Filter Options -->
-        <div>
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
-            Filter Options
+        <!-- Loading Skeleton -->
+        <div v-if="loading || !config" class="space-y-6">
+          <!-- Filter Options Skeleton -->
+          <div>
+            <div class="h-4 bg-gray-200 rounded animate-pulse mb-3 w-24"></div>
+            <div class="space-y-4">
+              <div v-for="i in 2" :key="i" class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
+                <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map Options Skeleton -->
+          <div>
+            <div class="h-4 bg-gray-200 rounded animate-pulse mb-3 w-24"></div>
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-24"></div>
+                <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-28"></div>
+                <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded animate-pulse w-28"></div>
+                <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actual Content -->
+        <div v-else>
+          <!-- Filter Options -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
+              Filter Options
+            </h3>
+
+            <div v-if="hasFilterOptions" class="space-y-4">
+              <div
+                v-for="(options, categoryName) in availableFilterOptions"
+                :key="categoryName"
+              >
+                <Selection
+                  :label="categoryName"
+                  :options="options"
+                  :defaultValue="getDefaultFilterValue(categoryName, options)"
+                  @selection-changed="(value) => handleFilterChanged(categoryName, value)"
+                />
+              </div>
+            </div>
+
+            <div v-else class="text-gray-500 text-sm italic">
+              No filter options available.
+            </div>
+          </div>
+
+          <!-- Map Options -->
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3 mt-6">
+            Map Options
           </h3>
 
-          <div v-if="hasFilterOptions" class="space-y-4">
-            <div
-              v-for="(options, categoryName) in availableFilterOptions"
-              :key="categoryName"
-            >
+          <div v-if="config?.kind !== 'geojson-only'">
+            <div>
               <Selection
-                :label="categoryName"
-                :options="options"
-                :defaultValue="getDefaultFilterValue(categoryName, options)"
-                @selection-changed="(value) => handleFilterChanged(categoryName, value)"
+                :label="'Color Scheme'"
+                :options="colorSchemes"
+                :defaultValue="config.mapColorConfig.colorScheme"
+                @selection-changed="handleColorSchemeChanged"
+              />
+
+              <Checkbox
+                class="mt-3"
+                label="Invert Color Scheme"
+                :defaultValue="config.mapColorConfig.colorSchemeInverted"
+                @checkbox-changed="handleColorSchemeInvertedChanged"
+              >
+                Invert color scheme
+              </Checkbox>
+
+              <Checkbox
+                class="mt-3"
+                label="Dynamic Legend"
+                :defaultValue="config.mapColorConfig.dynamic"
+                @checkbox-changed="handleDynamicLegendChanged"
+              >
+                Calculate the min and max from the data
+              </Checkbox>
+
+              <InputField
+                class="mt-3"
+                label="Legend Minimum"
+                :defaultValue="config.mapColorConfig.minValue"
+                :disabled="config.mapColorConfig.dynamic"
+                placeholder="0.00"
+                @input-changed="handleLegendMinimumChanged"
+              />
+
+              <InputField
+                class="mt-3"
+                label="Legend Maximum"
+                :defaultValue="config.mapColorConfig.maxValue"
+                :disabled="config.mapColorConfig.dynamic"
+                placeholder="1.00"
+                @input-changed="handleLegendMaximumChanged"
               />
             </div>
           </div>
 
           <div v-else class="text-gray-500 text-sm italic">
-            No filter options available.
+            No map options available.
           </div>
-        </div>
-
-        <!-- Map Options -->
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
-          Map Options
-        </h3>
-
-        <div v-if="config?.kind !== 'geojson-only'">
-          <div>
-            <Selection
-              :label="'Color Scheme'"
-              :options="colorSchemes"
-              :defaultValue="config.mapColorConfig.colorScheme"
-              @selection-changed="handleColorSchemeChanged"
-            />
-
-            <Checkbox
-              class="mt-3"
-              label="Invert Color Scheme"
-              :defaultValue="config.mapColorConfig.colorSchemeInverted"
-              @checkbox-changed="handleColorSchemeInvertedChanged"
-            >
-              Invert color scheme
-            </Checkbox>
-
-            <Checkbox
-              class="mt-3"
-              label="Dynamic Legend"
-              :defaultValue="config.mapColorConfig.dynamic"
-              @checkbox-changed="handleDynamicLegendChanged"
-            >
-              Calculate the min and max from the data
-            </Checkbox>
-
-            <InputField
-              class="mt-3"
-              label="Legend Minimum"
-              :defaultValue="config.mapColorConfig.minValue"
-              :disabled="config.mapColorConfig.dynamic"
-              placeholder="0.00"
-              @input-changed="handleLegendMinimumChanged"
-            />
-
-            <InputField
-              class="mt-3"
-              label="Legend Maximum"
-              :defaultValue="config.mapColorConfig.maxValue"
-              :disabled="config.mapColorConfig.dynamic"
-              placeholder="1.00"
-              @input-changed="handleLegendMaximumChanged"
-            />
-          </div>
-        </div>
-
-        <div v-else class="text-gray-500 text-sm italic">
-          No map options available.
         </div>
       </div>
     </section>
@@ -90,7 +134,7 @@ import { computed } from 'vue'
 import Selection from './selection.vue'
 import Checkbox from './checkbox.vue'
 import InputField from './input-field.vue'
-import { colorSchemes } from '../types.ts'
+import { colorSchemes } from '../config/types.ts'
 
 const props = defineProps({
   availableFilterOptions: {
@@ -99,13 +143,16 @@ const props = defineProps({
   },
   config: {
     type: Object,
-    required: true
+    required: false
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits([
   'filter-changed',
-  'toggle-data-import',
   'map-config-changed'
 ])
 
@@ -115,10 +162,10 @@ const hasFilterOptions = computed(() =>
 
 function getDefaultFilterValue (categoryName, options) {
   if (
-    props.config.initialFiltering !== undefined &&
-    Object.prototype.hasOwnProperty.call(props.config.initialFiltering, categoryName)
+    props.config.filter !== undefined &&
+    Object.prototype.hasOwnProperty.call(props.config.filter, categoryName)
   ) {
-    return props.config.initialFiltering[categoryName]
+    return props.config.filter[categoryName]
   }
   return options?.[0]
 }

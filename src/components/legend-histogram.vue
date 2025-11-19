@@ -1,5 +1,22 @@
 <template>
-  <div class="histogram-legend-container" ref="containerRef"></div>
+  <div class="relative">
+    <!-- Skeleton while loading OR config not ready -->
+    <div v-if="loading || !config" class="flex flex-col items-center p-4">
+      <div class="h-6 bg-gray-200 rounded animate-pulse mb-6 w-48"></div>
+      <div class="flex gap-1 mb-4">
+        <div v-for="i in 7" :key="i" class="w-10 h-5 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+      <div class="flex gap-8">
+        <div v-for="i in 8" :key="i" class="h-3 w-8 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    </div>
+
+    <div
+      class="histogram-legend-container"
+      ref="containerRef"
+      :class="{ hidden: loading || !config }"
+    ></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -10,65 +27,76 @@ import {
   createMapColor
 } from '../map_color.ts'
 import type { RegionData } from '../parse_data.ts'
-import type { MapColorConfig } from '../types.ts'
+import type { AppConfig } from '../types.ts'
 
 interface Props {
   regionData: RegionData[] | undefined
-  config: AppConfig
+  config?: AppConfig
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   regionData: () => undefined,
+  loading: false
 })
 
-const emit = defineEmits(['selected-legend-color'])
+const emit = defineEmits<{
+  'selected-legend-color': [string]
+}>()
 
 const containerRef = ref<HTMLElement | null>(null)
-let svg: any = null
+let svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null = null
 
+function formatThreshold(x: number) {
+  if (x === 0) return "0"
+  const abs = Math.abs(x)
+  const sign = x < 0 ? "-" : ""
 
-function formatThreshold(x) {
-    if (x === 0) return "0";
-
-  const abs = Math.abs(x);
-  const sign = x < 0 ? "-" : "";
-
-  // Scientific notation branch
   if (abs >= 1e3 || abs < 1e-3) {
-    // Get "1.23e±n" with 3 significant digits
-    const s = d3.format(".2e")(abs);          // e.g., "1.23e-5"
-    const [mant, expStr] = s.split("e");      // mant="1.23", expStr="-5"
-    const exp = parseInt(expStr, 10);
-
-    return `${sign}${mant}e${exp >= 0 ? "+" : ""}${exp}`;
+    const s = d3.format(".2e")(abs)
+    const [mant, expStr] = s.split("e")
+    const exp = parseInt(expStr, 10)
+    return `${sign}${mant}e${exp >= 0 ? "+" : ""}${exp}`
   }
 
-  // Fixed/general with 3 significant digits
-  // d3 ".3g" keeps 3 sig figs and uses fixed here; then drop leading zero.
-  const fixed = d3.format(".3g")(x);
-  return fixed.replace(/^(-?)0\./, "$1.");
+  const fixed = d3.format(".3g")(x)
+  return fixed.replace(/^(-?)0\./, "$1.")
 }
 
-
 function renderLegend() {
+  // Guard for container, loading, missing config, or wrong kind
+  if (!containerRef.value) return
+  if (props.loading) return
+  if (!props.config) return
+  if (props.config.kind === "geojson-only") {
+    // No legend for this kind, clear if needed
+    if (svg) svg.selectAll('*').remove()
+    return
+  }
+  if (!props.regionData || !props.regionData.length) return
+
+  // Lazily create the SVG when we first have enough info
+  if (!svg) {
+    svg = d3.select(containerRef.value)
+      .append('svg')
+      .attr('width', '100%')
+      .attr('height', '150px')
+      .attr('viewBox', '0 0 300 150')
+  }
+
   if (!svg) return
 
   svg.selectAll('*').remove()
 
   const mapColor = createMapColor(props.config, props.regionData)
-
   const width = 300
   const height = 150
   const margin = { top: 40, right: 20, bottom: 40, left: 20 }
-
   const thresholds = mapColor.getThresholds()
-  console.log(thresholds)
   const colors = mapColor.getColors()
   const numBins = colors.length
-
   const binWidth = (width - margin.left - margin.right) / numBins
   const binHeight = 20
-
   const group = svg.append('g')
 
   // Title
@@ -82,32 +110,30 @@ function renderLegend() {
 
   // Color bins
   colors.forEach((color, i) => {
-     group.append('rect')
-    .attr('x', margin.left + i * binWidth)
-    .attr('y', margin.top)
-    .attr('width', binWidth)
-    .attr('height', binHeight)
-    .style('fill', color)
-    .style('stroke', mapColor!.getBorderColor())
-    .style('stroke-width', 0.5)
-    .style('cursor', 'pointer')
-    .style('touch-action', 'manipulation')
-
-    .on('mouseenter', function () {
-      d3.select(this).style('stroke-width', 2)
-      emit('selected-legend-color', color)
-    })
-    .on('mouseout', function () {
-      d3.select(this).style('stroke-width', 0.5)
-      emit('selected-legend-color', "")
-    })
+    group.append('rect')
+      .attr('x', margin.left + i * binWidth)
+      .attr('y', margin.top)
+      .attr('width', binWidth)
+      .attr('height', binHeight)
+      .style('fill', color)
+      .style('stroke', mapColor.getBorderColor())
+      .style('stroke-width', 0.5)
+      .style('cursor', 'pointer')
+      .style('touch-action', 'manipulation')
+      .on('mouseenter', function () {
+        d3.select(this).style('stroke-width', 2)
+        emit('selected-legend-color', color)
+      })
+      .on('mouseout', function () {
+        d3.select(this).style('stroke-width', 0.5)
+        emit('selected-legend-color', "")
+      })
   })
 
   // Threshold labels
   thresholds.forEach((threshold, i) => {
     const x = margin.left + i * binWidth
 
-    // Tick marks
     group.append('line')
       .attr('x1', x)
       .attr('y1', margin.top + binHeight + 5)
@@ -115,7 +141,6 @@ function renderLegend() {
       .attr('y2', margin.top + binHeight + 10)
       .attr('stroke', '#888')
 
-    // Threshold values
     group.append('text')
       .attr('x', x)
       .attr('y', margin.top + binHeight + 25)
@@ -126,44 +151,16 @@ function renderLegend() {
   })
 }
 
-const initialize = () => {
-  switch (props.config.kind) {
-
-    // dont render a legend with geojson-only
-    case "geojson-only":
-      return
-      break
-
-    case "geojson-datafile":
-      break
-
-    case "geojson-embedded":
-      break
-
-    default:
-      break
-
-  }
-
-  if (!containerRef.value || !props.regionData.length) return
-
-  svg = d3.select(containerRef.value)
-    .append('svg')
-    .attr('width', '100%')
-    .attr('height', '150px')
-    .attr('viewBox', '0 0 300 150')
-
+onMounted(() => {
   renderLegend()
-}
-
-onMounted(initialize)
+})
 
 watch(
-  [() => props.config, () => props.regionData, () => props.geojson],
+  [() => props.config, () => props.regionData, () => props.loading],
   () => {
     renderLegend()
   },
   { deep: true }
 )
-
 </script>
+

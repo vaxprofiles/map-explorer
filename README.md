@@ -59,38 +59,11 @@ Your map will be displayed on the Github page of your fork and you can share it 
 
 ### Configuration Modes
 
-map-explorer can be configure by changing the configuration file in `/src/config.ts`
-The application supports two distinct configuration modes, determined by the `kind` field:
+map-explorer can be configure by changing or adding configuration files in `/src/config/map-configs`.
 
-#### 1. GeoJSON Only (`geojson-only`)
+The application currently supports one distinct configuration mode, determined by the `kind` field:
 
-Use this mode if you only want to display a map and nothing else.
-
-**Fields:**
-
-- **`kind`** (required): Must be set to `"geojson-only"`
-- **`geojsonFileName`** (required, string): Filename of the GeoJSON file. Put your file in the `/public` folder
-- **`idColumnGeojson`** (required, string): The property name in the GeoJSON features that serves as the unique identifier
-- **`legendTitle`** (optional, string): Title to display in the map legend
-
-**Example:**
-
-```javascript
-export const appConfig: AppConfig = {
-  "kind": "geojson-only",
-  mapDescription: {
-    title: "My catchy map title",
-    description: "My informative description"
-  },
-  "geojsonFileName": "regions.geojson",
-  "idColumnGeojson": "region_id",
-  "legendTitle": "Regional Data"
-}
-```
-
----
-
-#### 2. GeoJSON + External Data File (`geojson-datafile`)
+#### 1. GeoJSON + External Data File (`geojson-datafile`)
 
 Use this mode when you have a separate data file (e.g., CSV or parquet file) that needs to be joined with your GeoJSON geometries. The data file should contain a column that holds the region id's in the GeoJSON and a valueColumn that holds numberic values that are used to color the regions. It supports categorical columns that can be used as filters. Given an applied filter each region should map to a numerical value.
 
@@ -105,46 +78,36 @@ Use this mode when you have a separate data file (e.g., CSV or parquet file) tha
 - **`valueColumn`** (required, string): The column name containing the numeric values to visualize
 - **`legendTitle`** (optional, string): Title to display in the map legend
 - **`mapColorConfig`** (required, object): Configuration for color mapping (see [Map Color Configuration](#map-color-configuration))
-- **`initialFiltering`** (optional, object): Initial filter state as key-value pairs where keys are category column names and values are the selected categories
+- **`filter`** (optional, object): Initial filter state as key-value pairs where keys are category column names and values are the selected categories
 
 **Example:**
 
-```javascript
-export const appConfig: AppConfig = {
-  kind: "geojson-datafile",
-  mapDescription: {
-    title: "Historical disease mention rates",
-    description: `This map contains data gathered via Delpher and processed by the ODISSEI SoDa team. Each
-        municipality gets a "mention rate" assigned, which is a proxy for the actual disease
-        pressure in this region. See
-        <a
-          href="https://github.com/sodascience/disease_database"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="underline"
-        >
-          https://github.com/sodascience/disease_database
-        </a>.`
+```json
+{
+  "kind": "geojson-datafile",
+  "mapDescription": {
+    "title": "Historical disease mention rates",
+    "description": "This map contains data gathered via Delpher and processed by the ODISSEI SoDa team. Each municipality gets a \"mention rate\" assigned, which is a proxy for the actual disease pressure in this region. See <a href=\"https://github.com/sodascience/disease_database\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"underline\"> https://github.com/sodascience/disease_database</a>."
   },
-  categoryColumns: ["year", "month", "disease"],
-  valueColumn: "mention_rate",
-  idColumnGeojson: "cbscode",
-  idColumnDataFile: "cbscode",
-  dataFileName: "disease_database_v1.2.parquet",
-  geojsonFileName: "nl1869.geojson",
-  legendTitle: "Mention Rate",
-  mapColorConfig: {
-    minValue: 0,
-    maxValue: 0.4,
-    colorScheme: "viridis",
-    dynamic: false,
-    colorSchemeInverted: false,
+  "categoryColumns": ["year", "month", "disease"],
+  "valueColumn": "mention_rate",
+  "idColumnGeojson": "cbscode",
+  "idColumnDataFile": "cbscode",
+  "dataFileName": "disease_database_v1.2.parquet",
+  "geojsonFileName": "nl1869.geojson",
+  "legendTitle": "Mention Rate",
+  "mapColorConfig": {
+    "minValue": 0,
+    "maxValue": 0.4,
+    "colorScheme": "viridis",
+    "dynamic": false,
+    "colorSchemeInverted": false
   },
-  initialFiltering: {
+  "filter": {
     "year": "1918",
     "month": "10",
-    "disease": "influenza",
-  },
+    "disease": "influenza"
+  }
 }
 ```
 
@@ -185,9 +148,15 @@ The following color schemes are available:
 - `cubehelix` - Perceptually uniform spiral through color space
 - `no colorscheme` - No color scheme applied
 
+#### Multiple maps
+
+You can add multiple maps by adding multiple configuration files in the `/src/config/map-configs` folder. 
+If you have multiple configuration files, you will be able to select your different maps through a dialog.
+
+
 #### Configuration errors
 
-If you misspecified the `/src/configuration.ts` the app won't load an an error message will be shown in the browser console.
+If you misspecified the configurations the app won't load an an error message will be shown in the browser console.
 
 ### Embedding 
 

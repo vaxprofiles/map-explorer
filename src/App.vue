@@ -1,11 +1,19 @@
 <template>
-  <div class="items-center justify-center h-screen w-full">
-    <!-- Main content - only show when app is ready and regionData exists -->
-    <div v-if="isAppReady" class="w-full h-screen flex">
-
+  <div class="items-center justify-center h-screen w-full h-screen flex">
+    <div class="w-full h-screen flex">
       <!-- Map container -->
-      <div class="flex-1 flex flex-col p-2 bg-gray-50 border border-gray-300 rounded">
-        <div class="w-full h-full flex flex-col">
+      <div class="flex-1 flex flex-col p-2 bg-gray-50 border border-gray-300 rounded relative">
+
+        <!-- Loading App -->
+        <div v-if="isLoading"
+          class="w-full h-full flex items-center justify-center
+            animate-[pulse_2s_ease-in-out_infinite]
+          "
+        >
+          <LoadingMap />
+        </div>
+        <!-- Map -->
+        <div v-else class="w-full h-full flex flex-col">
           <div class="flex-1">
             <Map
               :geojson="geojsonData"
@@ -22,7 +30,10 @@
             <InformationIcon />
           </Button>
           <div v-show="showInfo" >
-            <MapDescription :config="config" />
+            <MapDescription
+              :config="config"
+              :loading="isLoading"
+            />
           </div>
         </div>
 
@@ -44,9 +55,27 @@
             <LegendHistogram
               :regionData="regionData"
               :config="config"
+              :loading="isLoading"
               @selected-legend-color="handleSelectedLegendColorChanged"
             />
           </div>
+        </div>
+
+        <!-- Map Selector -->
+        <div class="absolute top-4 right-18" v-if="configs.length > 1">
+          <Button v-model="showMapSelector">
+            <SwitchIcon />
+          </Button>
+        </div>
+
+        <div v-show="showMapSelector">
+            <MapSelector
+              :configs="configs"
+              :config="config"
+              :loading="isLoading"
+              @select-map="handleSwitchMap"
+              @close-map-selector="handleCloseMapSelector"
+          />
         </div>
 
         <!-- Control Panel -->
@@ -54,28 +83,20 @@
           <Button v-model="showControls">
             <SettingsIcon />
           </Button>
-            <div
-              class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75 max-h-[80dvh]"
-              v-show="showControls"
-            >
+          <div
+            class="absolute top-full right-0 mt-2 overflow-y-auto card-box bg-white w-75 max-h-[80dvh]"
+            v-show="showControls"
+          >
             <ControlPanel
               :availableFilterOptions="availableFilterOptions"
               :config="config"
+              :loading="isLoading"
               @filter-changed="handleFilterChanged"
-              @map-config-changed="handleMapConfigChanged"
+              @map-config-changed="handleMapColorConfigChanged"
             />
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Loading App -->
-    <div v-else
-      class="w-full h-full flex items-center justify-center
-        animate-[pulse_2s_ease-in-out_infinite]
-      "
-    >
-      <LoadingMap />
     </div>
   </div>
 </template>
@@ -87,54 +108,116 @@ import { ref, onMounted, watch } from "vue"
 import BarchartIcon from "./components/icons/BarchartIcon.vue"
 import SettingsIcon from "./components/icons/SettingsIcon.vue"
 import InformationIcon from "./components/icons/InformationIcon.vue"
+import SwitchIcon from "./components/icons/SwitchIcon.vue"
 import LoadingMap from "./components/icons/LoadingMap.vue"
-import Button from "./components/button.vue"
 
 // components
 import Map from "./components/map.vue"
 import LegendHistogram from "./components/legend-histogram.vue"
 import ControlPanel from "./components/control-panel.vue"
 import MapDescription from "./components/map-description.vue"
+import MapSelector from "./components/map-selector.vue"
+import Button from "./components/button.vue"
 
-import { fetchPublicFile } from "./helpers.ts"
-import type { GeoJSON } from "geojson"
 import type { RegionData } from "./processors/types"
-import { ProcessorFactory } from "./processors/processor_factory"
-import { appConfig } from "./config"
-import { validateAppConfig } from "./types.ts"
+import { Processor } from "./processors/processor"
+import { mapConfigs } from "./config/loader"
+import type { MapConfig } from "./config/types"
+import { MapManager } from "./mapManager"
+import type { GeoJSON } from "geojson"
+import { shallowEqual } from "fast-equals"
 
 // --- UI toggles ---
 const showInfo = ref(false)
 const showLegend = ref(false)
 const showControls = ref(false)
+const showMapSelector = ref(false)
 
 // App state
-const dataProcessor = ref<any | undefined>(undefined)
-const geojsonData = ref<GeoJSON | null>(undefined)
-const regionData = ref<RegionData[] | null>(undefined)
+const dataProcessor = ref<Processor | undefined>(undefined)
+const geojsonData = ref<GeoJSON | undefined>(undefined)
+const regionData = ref<RegionData[] | undefined>(undefined)
 const selectedLegendColor = ref<string>("")
-
-let config = ref<any>(validateAppConfig(appConfig))
+const config = ref<MapConfig | undefined>(undefined)
+const configs = ref<MapConfig[]>([])
 
 // Filter state
 const availableFilterOptions = ref<{ [key: string]: string[] }>({})
 const selectedFilters = ref<{ [key: string]: string }>({})
 
 // UI state
-const isAppReady = ref(false)
+const isLoading = ref(true)
+
+// Map manager instance
+const mapManager = new MapManager()
+
+
+function updateCurrentConfigInConfigs() {
+  if (!config.value) return
+
+  const currentTitle = config.value.mapDescription.title
+  const idx = configs.value.findIndex(
+    c => c.mapDescription.title === currentTitle
+  )
+
+  if (idx !== -1) {
+    // Replace the entry to keep reactivity and ensure MapManager sees updated config
+    configs.value[idx] = { ...config.value }
+  }
+}
 
 // Map control handlers
+async function handleSwitchMap(mapTitle: string) {
+  if (configs.value.length === 0) return
+
+  isLoading.value = true
+  showMapSelector.value = false
+
+  // Store Cache
+  handleMapConfigChanged("filter", selectedFilters.value)
+  updateCurrentConfigInConfigs()
+  mapManager.updateCachedState(config.value, {
+    regionData: regionData.value ?? [],
+    selectedFilters: { ...selectedFilters.value },
+    availableFilterOptions: { ...availableFilterOptions.value }
+  })
+
+  const nextConfig = configs.value.find(
+    c => c.mapDescription.title === mapTitle
+  )
+
+  if (nextConfig) {
+    await applyMap(nextConfig)
+  }
+  isLoading.value = false
+}
+
+async function applyMap(mapConfig: MapConfig) {
+  console.log("[App] Switching to map:", mapConfig.mapDescription.title)
+
+  const state = await mapManager.getMapState(mapConfig)
+
+  // Update current config and reactive refs
+  config.value = mapConfig
+  geojsonData.value = state.geojsonData
+  dataProcessor.value = state.dataProcessor
+  regionData.value = state.regionData
+  availableFilterOptions.value = { ...state.availableFilterOptions }
+  selectedFilters.value = { ...state.selectedFilters }
+}
+
 function handleFilterChanged(categoryName: string, value: any) {
   selectedFilters.value[categoryName] = value
 }
 
 function handleSelectedLegendColorChanged(color: string) {
-  if (color) console.log(`[App] selected legend color changed to:`, color)
+  if (color) console.log("[App] selected legend color changed to:", color)
   selectedLegendColor.value = color
 }
 
-function handleMapConfigChanged(value: any) {
-  console.log(`[App] map config changed to:`, value)
+function handleMapColorConfigChanged(value: any) {
+  console.log("[App] map color config changed to:", value)
+  if (!config.value) return
   config.value = {
     ...config.value,
     mapColorConfig: value
@@ -142,81 +225,48 @@ function handleMapConfigChanged(value: any) {
   resetSelectedLegendColor()
 }
 
-function resetSelectedFilters() {
-  selectedFilters.value = {}
-}
-
-async function setMapControls(dp: any) {
-  resetSelectedFilters()
-  if (dp) {
-    availableFilterOptions.value = await dp.extractFilterCategories(config.value.categoryColumns)
-    for (const [categoryName, values] of Object.entries(availableFilterOptions.value)) {
-      selectedFilters.value[categoryName] = (values as string[])[0]
-    }
-  } else {
-    availableFilterOptions.value = {}
+function handleMapConfigChanged(key: string, value: any) {
+  console.log(`[App] map config changed key: ${key} to value: `, value)
+  if (!config.value) return
+  config.value = {
+    ...config.value,
+    [key]: value
   }
 }
 
-// Import handlers
-async function handleImport(importedConfig: any, importedGeojson: GeoJSON, importedProcessor: any) {
-  console.log("[App] Importing new data")
-  isAppReady.value = false
-
-  config.value = importedConfig
-  geojsonData.value = importedGeojson
-  dataProcessor.value = importedProcessor
-
-  await setMapControls(dataProcessor.value)
-  isAppReady.value = true
+function handleCloseMapSelector() {
+  console.log("[App] Map selector closed")
+  showMapSelector.value = false
 }
+
 
 // App initialization
 async function initializeApp() {
   console.log("[App] App Initializing")
+  configs.value = mapConfigs
 
-  // Load Geojson
-  const geojsonFile = await fetchPublicFile(config.value.geojsonFileName)
-  geojsonData.value = JSON.parse(await geojsonFile.text()) as GeoJSON
+  if (configs.value.length === 0) throw new Error("[App] No valid configs available")
 
-  // config dependent initialization
-  switch (config.value.kind) {
-    case "geojson-only":
-      break
-    case "geojson-datafile": {
-      const dataFile = await fetchPublicFile(config.value.dataFileName)
-      dataProcessor.value = await ProcessorFactory.create(dataFile)
-      await setMapControls(dataProcessor.value)
-
-      const initialFilters = config.value.initialFiltering || selectedFilters.value
-      regionData.value = await dataProcessor.value.getRegionData(
-        initialFilters,
-        config.value.idColumnDataFile,
-        config.value.valueColumn
-      )
-      break
-    }
-    case "geojson-embedded":
-      break
-    default:
-      throw new Error(`Unhandled AppConfig kind: ${JSON.stringify(config.value)}`)
-  }
-
-  isAppReady.value = true
+  // Load first map
+  await applyMap(configs.value[0])
+  isLoading.value = false
   console.log("[App] App initialized")
 }
 
-// Watch filter if filter changed query new data
+// Watch filter: if filter changed, query new data
 watch(
   selectedFilters,
   async () => {
-    if (isAppReady.value !== true) return
-    console.log("[App] Filter changed querying new data]")
+    if (!isLoading || !dataProcessor.value || !config.value) return
+    if (shallowEqual(selectedFilters.value, config.value.filter)) return
+    console.log("[App] Filter changed, querying new data")
+
     regionData.value = await dataProcessor.value.getRegionData(
       selectedFilters.value,
       config.value.idColumnDataFile,
       config.value.valueColumn
     )
+
   },
   { deep: true }
 )
@@ -229,5 +279,5 @@ onMounted(async () => {
 function resetSelectedLegendColor() {
   selectedLegendColor.value = ""
 }
-
 </script>
+
