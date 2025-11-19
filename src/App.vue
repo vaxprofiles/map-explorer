@@ -74,6 +74,7 @@
               :config="config"
               :loading="isLoading"
               @select-map="handleSwitchMap"
+              @close-map-selector="handleCloseMapSelector"
           />
         </div>
 
@@ -232,6 +233,12 @@ function handleMapConfigChanged(key: string, value: any) {
     [key]: value
   }
 }
+
+function handleCloseMapSelector() {
+  console.log("[App] Map selector closed")
+  showMapSelector.value = false
+}
+
 
 // App initialization
 async function initializeApp() {
