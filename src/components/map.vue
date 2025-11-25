@@ -23,6 +23,7 @@ import {
   createMapColor,
 } from "../map_color"
 import type { GeoJSON } from "geojson"
+import rewind from '@mapbox/geojson-rewind';
 import type {
   MapColorConfig,
   AppConfig
@@ -149,8 +150,9 @@ function renderMap() {
     return selected === color ? 1 : 0.2
   }
 
+  const correctedGeojson = rewind(geojsonData, true)
   paths = g.selectAll<SVGPathElement, Feature>('path')
-    .data(geojsonData.features)
+    .data(correctedGeojson.features)
     .join('path')
     .attr('d', pathGenerator)
     .attr('stroke', mapColor.getBorderColor())
