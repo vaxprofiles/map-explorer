@@ -6,7 +6,7 @@
   },
   "categoryColumns": ["profile"],
   "valueColumn": "value",
-  "idColumnGeojson": "id",
+  "idColumnGeojson": "statcode",
   "idColumnDataFile": "buren",
   "dataFileName": "wijk_5_processed.csv",
   "geojsonFileName": "wijk_updated_2024.geojson",
