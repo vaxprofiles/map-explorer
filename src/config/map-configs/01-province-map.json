@@ -6,7 +6,7 @@
   },
   "categoryColumns": ["profile", "gender"],
   "valueColumn": "value",
-  "idColumnGeojson": "statnaam",
+  "idColumnGeojson": "name",
   "idColumnDataFile": "Provincies_Naam",
   "dataFileName": "provincie_5_filtered_gender.csv",
   "geojsonFileName": "provincie_2020.geojson",
@@ -20,6 +20,6 @@
   },
   "filter": {
     "profile": "1",
-    "gender": "1"
+    "gender": "1.0"
   }
 }
