@@ -12,7 +12,7 @@
   "geojsonFileName": "wijk_updated_2024.geojson",
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {
-    "minValue": 1,
+    "minValue": 0.0,
     "maxValue": 1.0,
     "colorScheme": "viridis",
     "dynamic": false,
