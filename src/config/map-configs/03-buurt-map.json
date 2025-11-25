@@ -8,7 +8,7 @@
   "valueColumn": "value",
   "idColumnGeojson": "statcode",
   "idColumnDataFile": "buren",
-  "dataFileName": "wijk_5_processed.csv",
+  "dataFileName": "buurt_5_processed.csv",
   "geojsonFileName": "buurt_2024.geojson",
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {
