@@ -15,7 +15,7 @@
     "minValue": 0.0,
     "maxValue": 1.0,
     "colorScheme": "viridis",
-    "dynamic": false,
-    "colorSchemeInverted": false
+    "dynamic": true,
+    "colorSchemeInverted": true
   }
 }

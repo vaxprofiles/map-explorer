@@ -13,13 +13,9 @@
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {
     "minValue": 0,
-    "maxValue": 0.4,
+    "maxValue": 1.0,
     "colorScheme": "viridis",
-    "dynamic": false,
-    "colorSchemeInverted": false
-  },
-  "filter": {
-    "profile": "1",
-    "gender": "1.0"
+    "dynamic": true,
+    "colorSchemeInverted": true
   }
 }
