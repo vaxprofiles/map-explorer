@@ -1,0 +1,21 @@
+{
+  "kind": "geojson-datafile",
+  "mapDescription": {
+    "title": "Vaccination rate by buurt",
+    "description": "Testing buurt"
+  },
+  "categoryColumns": ["profile"],
+  "valueColumn": "value",
+  "idColumnGeojson": "id",
+  "idColumnDataFile": "buren",
+  "dataFileName": "wijk_5_processed.csv",
+  "geojsonFileName": "wijk_updated_2024.geojson",
+  "legendTitle": "Predicted prevelance",
+  "mapColorConfig": {
+    "minValue": 0.0,
+    "maxValue": 1.0,
+    "colorScheme": "viridis",
+    "dynamic": true,
+    "colorSchemeInverted": true
+  }
+}

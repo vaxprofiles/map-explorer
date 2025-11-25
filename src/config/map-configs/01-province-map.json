@@ -8,7 +8,7 @@
   "valueColumn": "value",
   "idColumnGeojson": "name",
   "idColumnDataFile": "Provincies_Naam",
-  "dataFileName": "provincie_5_filtered_gender.csv",
+  "dataFileName": "provincie_5_processed.csv",
   "geojsonFileName": "provincie_2020.geojson",
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {

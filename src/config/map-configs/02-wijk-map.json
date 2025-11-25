@@ -6,9 +6,9 @@
   },
   "categoryColumns": ["profile"],
   "valueColumn": "value",
-  "idColumnGeojson": "data_id",
+  "idColumnGeojson": "id",
   "idColumnDataFile": "wijk",
-  "dataFileName": "wijk_5_no_filters.csv",
+  "dataFileName": "wijk_5_processed.csv",
   "geojsonFileName": "wijk_updated_2024.geojson",
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {
