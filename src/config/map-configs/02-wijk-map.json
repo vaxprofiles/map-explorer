@@ -1,0 +1,21 @@
+{
+  "kind": "geojson-datafile",
+  "mapDescription": {
+    "title": "Vaccination rate by province",
+    "description": "Testing wijk"
+  },
+  "categoryColumns": ["profile"],
+  "valueColumn": "value",
+  "idColumnGeojson": "data_id",
+  "idColumnDataFile": "wijk",
+  "dataFileName": "wijk_5_no_filters.csv",
+  "geojsonFileName": "wijk_updated_2024.geojson",
+  "legendTitle": "Predicted prevelance",
+  "mapColorConfig": {
+    "minValue": 1,
+    "maxValue": 1.0,
+    "colorScheme": "viridis",
+    "dynamic": false,
+    "colorSchemeInverted": false
+  }
+}
