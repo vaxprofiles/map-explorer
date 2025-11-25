@@ -1,0 +1,25 @@
+{
+  "kind": "geojson-datafile",
+  "mapDescription": {
+    "title": "Vaccination rate by province",
+    "description": "This map contains data gathered in CBS. Each province gets a \"predicted vaccination rate\" assigned, which is a proxy for the actual disease pressure in this region. See <a href=\"https://github.com/sodascience/disease_database\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"underline\"> https://github.com/sodascience/disease_database</a>."
+  },
+  "categoryColumns": ["profile", "gender"],
+  "valueColumn": "value",
+  "idColumnGeojson": "statnaam",
+  "idColumnDataFile": "Provincies_Naam",
+  "dataFileName": "provincie_5_filtered_gender.csv",
+  "geojsonFileName": "provincie_2020.geojson",
+  "legendTitle": "Predicted prevelance",
+  "mapColorConfig": {
+    "minValue": 0,
+    "maxValue": 0.4,
+    "colorScheme": "viridis",
+    "dynamic": false,
+    "colorSchemeInverted": false
+  },
+  "filter": {
+    "profile": "1",
+    "gender": "1"
+  }
+}
