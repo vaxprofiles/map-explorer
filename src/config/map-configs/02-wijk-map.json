@@ -1,7 +1,7 @@
 {
   "kind": "geojson-datafile",
   "mapDescription": {
-    "title": "Vaccination rate by province",
+    "title": "Vaccination rate by wijk",
     "description": "Testing wijk"
   },
   "categoryColumns": ["profile"],
