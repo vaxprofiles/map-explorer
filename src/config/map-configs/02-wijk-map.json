@@ -9,7 +9,7 @@
   "idColumnGeojson": "statcode",
   "idColumnDataFile": "wijk",
   "dataFileName": "wijk_5_processed.csv",
-  "geojsonFileName": "wijk_updated_2024.geojson",
+  "geojsonFileName": "wijk_2024.geojson",
   "legendTitle": "Predicted prevelance",
   "mapColorConfig": {
     "minValue": 0.0,
