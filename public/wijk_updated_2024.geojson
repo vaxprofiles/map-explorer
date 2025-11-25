@@ -744,6 +744,54 @@
         "coordinates": [
           [
             [
+              4.905,
+              52.346
+            ],
+            [
+              4.895,
+              52.348
+            ],
+            [
+              4.886,
+              52.348
+            ],
+            [
+              4.886,
+              52.345
+            ],
+            [
+              4.89,
+              52.336
+            ],
+            [
+              4.893,
+              52.335
+            ],
+            [
+              4.905,
+              52.346
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "statcode": "WK0363KK",
+        "jrstatcode": "2024WK0363KK",
+        "statnaam": "Scheldebuurt",
+        "rubriek": "wijk",
+        "id": 969,
+        "FID": "wijk_gegeneraliseerd.130aef11-3bc4-4356-ad9b-520c3773b2ae",
+        "data_id": "0363KK"
+      },
+      "id": "WK0363KK"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
               4.707,
               52.335
             ],
