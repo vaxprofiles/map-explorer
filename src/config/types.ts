@@ -9,6 +9,7 @@ export const colorSchemes = [
   "turbo",
   "warm",
   "cool",
+  "coolwarm",
   "cubehelix",
   "no colorscheme"
 ] as const;

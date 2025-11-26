@@ -68,6 +68,7 @@ export class MapColor {
       case 'turbo':       return d3.interpolateTurbo
       case 'warm':        return d3.interpolateWarm
       case 'cool':        return d3.interpolateCool
+      case 'coolwarm':    return d3.interpolateRdBu
       case 'cubehelix':   return d3.interpolateCubehelixDefault
       case 'interpolate': return d3.interpolateRdYlBu
       case 'no colorscheme': return () => '#FFFFFF'
@@ -76,10 +77,11 @@ export class MapColor {
   }
 
   getBinColor(value: number): string {
+    if (value === undefined) return '#D3D3D3'
     const i = this.thresholds.findIndex((t, j) =>
       value >= t && value < this.thresholds[j + 1]
     )
-    return this.colors[i >= 0 ? i : this.colors.length - 1] ?? '#FFFFFF'
+    return this.colors[i >= 0 ? i : this.colors.length - 1]
   }
 
   getThresholds() { return this.thresholds }
