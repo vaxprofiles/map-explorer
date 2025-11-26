@@ -68,6 +68,7 @@ export class MapColor {
       case 'turbo':       return d3.interpolateTurbo
       case 'warm':        return d3.interpolateWarm
       case 'cool':        return d3.interpolateCool
+      case 'coolwarm':    return d3.interpolateRdBu
       case 'cubehelix':   return d3.interpolateCubehelixDefault
       case 'interpolate': return d3.interpolateRdYlBu
       case 'no colorscheme': return () => '#FFFFFF'
