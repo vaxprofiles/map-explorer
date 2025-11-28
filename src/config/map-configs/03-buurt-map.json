@@ -1,8 +1,8 @@
 {
   "kind": "geojson-datafile",
   "mapDescription": {
-    "title": "Vaccination rate by buurt",
-    "description": "Testing buurt"
+    "title": "Profile assignment by province",
+    "description": "This map contains data gathered in CBS. Each buurt gets a \"predicted vaccination rate\" based on the results of the Explainable Boosting Machine model."
   },
   "categoryColumns": ["profile"],
   "valueColumn": "value",
@@ -10,7 +10,7 @@
   "idColumnDataFile": "buren",
   "dataFileName": "buurt_5_processed.csv",
   "geojsonFileName": "buurt_2024.geojson",
-  "legendTitle": "Predicted prevelance",
+  "legendTitle": "Predicted prevelance in percentages",
   "mapColorConfig": {
     "minValue": 0.0,
     "maxValue": 1.0,
